@@ -70,37 +70,44 @@ def check_recorded_voice() -> None:
     recorded_voices_folder = get_recorded_voices_folder()
     import glob
     from pathlib import Path
-    cid_set: set[int] = set[int]()
-    invalid_cid_set: set[str] = set()
+    cid_list: list[int] = list[int]()
+    invalid_cid_list: list[str] = list()
     for file in glob.glob(os.path.join(recorded_voices_folder, "*.wav")):
         if os.path.isfile(file):
             cid = Path(file).stem
             try:
-                cid_set.add(int(cid))
+                cid_list.append(int(cid))
             except ValueError:
-                invalid_cid_set.add(cid)
-    if cid_set:
-        sql: str
-        if len(cid_set) > 1:
-            cid_set_text = str(cid_set)[1:-1]
-            # noinspection SqlNoDataSourceInspection
-            sql = f"select id from cards where id in ({cid_set_text})"
-        else:
-            # noinspection SqlNoDataSourceInspection
-            sql = f"select id from cards where id={list(cid_set)[0]}"
-        valid_cid_set = set(mw.col.db.list(sql))
-        for cid in cid_set.difference(valid_cid_set):
-            invalid_cid_set.add(str(cid))
-    if invalid_cid_set:
-        question = f"一共有{len(invalid_cid_set)}个不再使用的录音文件，请问是否清理？" \
-            if is_chinese() else f"There are {len(invalid_cid_set)} unused " \
+                invalid_cid_list.append(cid)
+    if cid_list:
+        valid_cid_list: list[int] = []
+        imax = len(cid_list) // 100
+        if len(cid_list) % 100 == 0:
+            imax -= 1
+        for i in range(imax + 1):
+            sql: str
+            if i < imax or len(cid_list) % 100 != 1:
+                cid_list_segment = cid_list[i*100:(i+1)*100] if i < imax else cid_list[i*100:]
+                cid_set_text = str(cid_list_segment)[1:-1]
+                # noinspection SqlNoDataSourceInspection
+                sql = f"select id from cards where id in ({cid_set_text})"
+            else:
+                # noinspection SqlNoDataSourceInspection
+                sql = f"select id from cards where id={cid_list[i * 100]}"
+            valid_cid_list.extend(mw.col.db.list(sql))
+        difference = set(cid_list).difference(set(valid_cid_list))
+        for cid in difference:
+            invalid_cid_list.append(str(cid))
+    if invalid_cid_list:
+        question = f"一共有{len(invalid_cid_list)}个不再使用的录音文件，请问是否清理？" \
+            if is_chinese() else f"There are {len(invalid_cid_list)} unused " \
                                  f"recorded voices, would you like to clear them?"
         if askUser(question):
-            for cid in invalid_cid_set:
+            for cid in invalid_cid_list:
                 wav_path = Path(os.path.join(recorded_voices_folder, cid + '.wav'))
                 wav_path.unlink(missing_ok=True)
-            hint = f"清除了{len(invalid_cid_set)}个不再使用的录音文件。" if is_chinese() \
-                else f"{len(invalid_cid_set)} unused recorded voices have been cleared."
+            hint = f"清除了{len(invalid_cid_list)}个不再使用的录音文件。" if is_chinese() \
+                else f"{len(invalid_cid_list)} unused recorded voices have been cleared."
             tooltip(hint)
     else:
         hint = "没有需要清理的录音文件。" if is_chinese() else "No unused recorded voices to be cleared."
