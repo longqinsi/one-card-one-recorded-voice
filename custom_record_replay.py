@@ -12,6 +12,8 @@ import anki
 import anki.lang
 from aqt import gui_hooks
 from aqt.main import AnkiQt
+import glob
+from pathlib import Path
 
 
 def _ensure_exists(path: str) -> str:
@@ -66,10 +68,8 @@ def is_chinese() -> bool:
     return anki.lang.current_lang == 'zh-CN'
 
 
-def check_recorded_voice() -> None:
+def clear_unused_recorded_voices() -> None:
     recorded_voices_folder = get_recorded_voices_folder()
-    import glob
-    from pathlib import Path
     cid_list: list[int] = list[int]()
     invalid_cid_list: list[str] = list()
     for file in glob.glob(os.path.join(recorded_voices_folder, "*.wav")):
@@ -114,14 +114,46 @@ def check_recorded_voice() -> None:
         tooltip(hint)
 
 
-def create_check_unused_recorded_voice_menu_item():
+def create_clear_unused_recorded_voice_menu_item() -> None:
     # create a new menu item, "test"
     title = "清理不再使用的录音文件" if is_chinese() else "Clear Unused Recorded Voices"
     action = QAction(title, mw)
     # set it to call testFunction when it's clicked
-    qconnect(action.triggered, check_recorded_voice)
+    qconnect(action.triggered, clear_unused_recorded_voices)
     # and add it to the tools menu
     mw.form.menuTools.addAction(action)
 
 
-create_check_unused_recorded_voice_menu_item()
+create_clear_unused_recorded_voice_menu_item()
+
+
+def delete_all_recorded_voices() -> None:
+    question = "删除后将无法恢复，请问是否要删除全部录音文件？" if is_chinese() \
+        else "You can no longer recover the deleted recorded voices, are you sure to go on?"
+    if askUser(question, defaultno=True):
+        recorded_voices_folder = get_recorded_voices_folder()
+        recorded_voices = glob.glob(os.path.join(recorded_voices_folder, "*.wav"))
+        deleted_count = 0
+        for file in recorded_voices:
+            if os.path.isfile(file):
+                try:
+                    os.unlink(file)
+                    deleted_count += 1
+                except OSError:
+                    pass
+        hint = f"删除了{deleted_count}个录音文件" if is_chinese() \
+            else f"{deleted_count} recorded voices have been deleted."
+        tooltip(hint)
+
+
+def create_delete_all_recorded_voices_menu_item() -> None:
+    # create a new menu item, "test"
+    title = "删除全部录音文件" if is_chinese() else "Remove All Recorded Voices"
+    action = QAction(title, mw)
+    # set it to call testFunction when it's clicked
+    qconnect(action.triggered, delete_all_recorded_voices)
+    # and add it to the tools menu
+    mw.form.menuTools.addAction(action)
+
+
+create_delete_all_recorded_voices_menu_item()
