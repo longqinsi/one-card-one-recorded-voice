@@ -116,7 +116,7 @@ def check_recorded_voice() -> None:
 
 def create_check_unused_recorded_voice_menu_item():
     # create a new menu item, "test"
-    title = "清理录音文件" if is_chinese() else "check recorded voices"
+    title = "清理不再使用的录音文件" if is_chinese() else "clear unused recorded voices"
     action = QAction(title, mw)
     # set it to call testFunction when it's clicked
     qconnect(action.triggered, check_recorded_voice)

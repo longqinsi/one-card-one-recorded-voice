@@ -257,4 +257,5 @@ dmypy.json
 cython_debug/
 
 /meta.json
-!/one-card-one-recorded-voice.zip
+*.zip
+*.ankiaddon
