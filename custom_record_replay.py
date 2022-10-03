@@ -35,8 +35,8 @@ def on_reviewer_will_replay_recording(path: str) -> str:
     card_wav_path = os.path.join(recorded_voices_folder, f'{card_id}.wav')
     if path and os.path.basename(path) == 'rec.wav':
         if os.path.exists(path):
-            # User has recorded a new voice, move it to [profile folder]/recorded_voices
-            shutil.move(path, card_wav_path)
+            # User has recorded a new voice, copy it to [profile folder]/recorded_voices
+            shutil.copyfile(path, card_wav_path)
             mw.reviewer._recordedAudio = card_wav_path
             path = card_wav_path
         elif os.path.exists(card_wav_path):
